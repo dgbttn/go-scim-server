@@ -1,0 +1,126 @@
+{
+  "attributes": [
+    {
+      "caseExact": false,
+      "description": "",
+      "multiValued": false,
+      "mutability": "readWrite",
+      "name": "required",
+      "required": true,
+      "returned": "default",
+      "type": "string",
+      "uniqueness": "none"
+    },
+    {
+      "description": "",
+      "multiValued": true,
+      "mutability": "readWrite",
+      "name": "booleans",
+      "required": true,
+      "returned": "default",
+      "type": "boolean"
+    },
+    {
+      "description": "",
+      "multiValued": true,
+      "mutability": "readWrite",
+      "name": "complex",
+      "required": false,
+      "returned": "default",
+      "subAttributes": [
+        {
+          "caseExact": false,
+          "description": "",
+          "multiValued": false,
+          "mutability": "readWrite",
+          "name": "sub",
+          "required": false,
+          "returned": "default",
+          "type": "string",
+          "uniqueness": "none"
+        }
+      ],
+      "type": "complex"
+    },
+    {
+      "caseExact": true,
+      "description": "",
+      "multiValued": false,
+      "mutability": "readWrite",
+      "name": "binary",
+      "required": false,
+      "returned": "default",
+      "type": "binary",
+      "uniqueness": "none"
+    },
+    {
+      "caseExact": false,
+      "description": "",
+      "multiValued": false,
+      "mutability": "readWrite",
+      "name": "dateTime",
+      "required": false,
+      "returned": "default",
+      "type": "dateTime",
+      "uniqueness": "none"
+    },
+    {
+      "caseExact": true,
+      "description": "",
+      "multiValued": false,
+      "mutability": "readWrite",
+      "name": "reference",
+      "required": false,
+      "returned": "default",
+      "type": "reference",
+      "uniqueness": "none"
+    },
+    {
+      "caseExact": false,
+      "description": "",
+      "multiValued": false,
+      "mutability": "readWrite",
+      "name": "integer",
+      "required": false,
+      "returned": "default",
+      "type": "integer",
+      "uniqueness": "none"
+    },
+    {
+      "caseExact": false,
+      "description": "",
+      "multiValued": false,
+      "mutability": "readWrite",
+      "name": "integerNumber",
+      "required": false,
+      "returned": "default",
+      "type": "integer",
+      "uniqueness": "none"
+    },
+    {
+      "caseExact": false,
+      "description": "",
+      "multiValued": false,
+      "mutability": "readWrite",
+      "name": "decimal",
+      "required": false,
+      "returned": "default",
+      "type": "decimal",
+      "uniqueness": "none"
+    },
+    {
+      "caseExact": false,
+      "description": "",
+      "multiValued": false,
+      "mutability": "readWrite",
+      "name": "decimalNumber",
+      "required": false,
+      "returned": "default",
+      "type": "decimal",
+      "uniqueness": "none"
+    }
+  ],
+  "description": "",
+  "id": "empty",
+  "name": "test"
+}
