@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/dgbttn/go-scim-server/errors"
+	"github.com/dgbttn/go-scim-server/optional"
 	datetime "github.com/di-wu/xsd-datetime"
-	"github.com/elimity-com/scim/errors"
-	"github.com/elimity-com/scim/optional"
 )
 
 // SimpleCoreAttribute creates a non-complex attribute based on given parameters.

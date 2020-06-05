@@ -5,9 +5,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/elimity-com/scim/optional"
-	"github.com/elimity-com/scim/schema"
-	"github.com/elimity-com/scim"
+	"github.com/dgbttn/go-scim-server/optional"
+	"github.com/dgbttn/go-scim-server/schema"
+	"github.com/dgbttn/go-scim-server/scim"
 )
 
 func makeData() map[string]Data {

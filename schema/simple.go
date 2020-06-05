@@ -1,6 +1,6 @@
 package schema
 
-import "github.com/elimity-com/scim/optional"
+import "github.com/dgbttn/go-scim-server/optional"
 
 // SimpleParams are the parameters used to create a simple attribute.
 type SimpleParams struct {

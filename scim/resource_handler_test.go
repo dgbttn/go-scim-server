@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/elimity-com/scim/errors"
+	"github.com/dgbttn/go-scim-server/errors"
 )
 
 func ExampleResourceHandler() {

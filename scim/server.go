@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dgbttn/go-scim-server/errors"
+	"github.com/dgbttn/go-scim-server/schema"
 	filter "github.com/di-wu/scim-filter-parser"
-	"github.com/elimity-com/scim/errors"
-	"github.com/elimity-com/scim/schema"
 )
 
 const (

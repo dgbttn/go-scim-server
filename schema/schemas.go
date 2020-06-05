@@ -1,6 +1,6 @@
 package schema
 
-import "github.com/elimity-com/scim/optional"
+import "github.com/dgbttn/go-scim-server/optional"
 
 // CoreUserSchema returns the the default "User" Resource Schema.
 func CoreUserSchema() Schema {

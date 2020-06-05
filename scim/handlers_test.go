@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/elimity-com/scim/errors"
-	"github.com/elimity-com/scim/optional"
-	"github.com/elimity-com/scim/schema"
+	"github.com/dgbttn/go-scim-server/errors"
+	"github.com/dgbttn/go-scim-server/optional"
+	"github.com/dgbttn/go-scim-server/schema"
 
 	"github.com/stretchr/testify/assert"
 )

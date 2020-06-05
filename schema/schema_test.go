@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/elimity-com/scim/optional"
+	"github.com/dgbttn/go-scim-server/optional"
 )
 
 func TestInvalidAttributeName(t *testing.T) {

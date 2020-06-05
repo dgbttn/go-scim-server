@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/elimity-com/scim/errors"
+	"github.com/dgbttn/go-scim-server/errors"
 )
 
 func errorHandler(w http.ResponseWriter, _ *http.Request, scimErr *errors.ScimError) {

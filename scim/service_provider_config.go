@@ -1,7 +1,7 @@
 package scim
 
 import (
-	"github.com/elimity-com/scim/optional"
+	"github.com/dgbttn/go-scim-server/optional"
 )
 
 // ServiceProviderConfig enables a service provider to discover SCIM specification features in a standardized form as
