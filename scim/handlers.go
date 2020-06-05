@@ -274,7 +274,7 @@ func (s Server) resourcesGetHandler(w http.ResponseWriter, r *http.Request, reso
 		return
 	}
 
-	var resources []interface{}
+	resources := make([]interface{}, 0)
 	for _, v := range page.Resources {
 		resources = append(resources, v.response(resourceType))
 	}

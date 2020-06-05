@@ -136,6 +136,7 @@ func newTestResourceHandler() ResourceHandler {
 		data[fmt.Sprintf("000%d", i)] = testData{
 			resourceAttributes: ResourceAttributes{
 				"userName": fmt.Sprintf("test%d", i),
+				"externalId": fmt.Sprintf("external%d", i),
 			},
 			meta: map[string]string{
 				"created":      fmt.Sprintf("2020-01-%02dT15:04:05+07:00", i),
@@ -249,7 +250,6 @@ func TestServerSchemasEndpoint(t *testing.T) {
 					"urn:ietf:params:scim:schemas:core:2.0:User",
 					"urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
 				}, resourceIDs)
-
 		})
 	}
 }

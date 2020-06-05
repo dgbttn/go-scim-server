@@ -17,6 +17,7 @@ func makeData() map[string]Data {
 		data[fmt.Sprintf("000%d", i)] = Data{
 			resourceAttributes: scim.ResourceAttributes{
 				"userName": fmt.Sprintf("test%d", i),
+				"externalId": fmt.Sprintf("external%d", i),
 			},
 			meta: map[string]string{
 				"created":      fmt.Sprintf("2020-01-%02dT15:04:05+07:00", i),
