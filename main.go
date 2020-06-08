@@ -5,18 +5,22 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/dgbttn/go-scim-server/db"
 	"github.com/dgbttn/go-scim-server/optional"
 	"github.com/dgbttn/go-scim-server/schema"
 	"github.com/dgbttn/go-scim-server/scim"
+
+	_ "github.com/joho/godotenv/autoload"
+	"github.com/spf13/viper"
 )
 
-func makeData() map[string]Data {
-	data := make(map[string]Data)
+func makeData() map[string]UserData {
+	data := make(map[string]UserData)
 	// Generate enough test data to test pagination
 	for i := 1; i < 21; i++ {
-		data[fmt.Sprintf("000%d", i)] = Data{
+		data[fmt.Sprintf("000%d", i)] = UserData{
 			resourceAttributes: scim.ResourceAttributes{
-				"userName": fmt.Sprintf("test%d", i),
+				"userName":   fmt.Sprintf("test%d", i),
 				"externalId": fmt.Sprintf("external%d", i),
 			},
 			meta: map[string]string{
@@ -29,11 +33,11 @@ func makeData() map[string]Data {
 	return data
 }
 
-func newServer() scim.Server {
-	data := makeData()
-	resourceHandler := ResourceHandler{data: data}
+func initServer() {
+	userData := makeData()
+	userResourceHandler := UserResourceHandler{data: userData}
 
-	return scim.Server{
+	server := scim.Server{
 		Config: scim.ServiceProviderConfig{},
 		ResourceTypes: []scim.ResourceType{
 			{
@@ -42,13 +46,25 @@ func newServer() scim.Server {
 				Endpoint:    "/Users",
 				Description: optional.NewString("User Account"),
 				Schema:      schema.CoreUserSchema(),
-				Handler:     resourceHandler,
+				Handler:     userResourceHandler,
 			},
 		},
+	}
+
+	log.Fatal(http.ListenAndServe(":8080", server))
+}
+
+func connectMongoDB() {
+	connectionStr := viper.GetString("MONGODB_CONNECTION")
+	databaseStr := viper.GetString("DATABASE")
+	collectionStr := viper.GetString("COLLECTION")
+	if err := db.MongoDB.ConnectDB(connectionStr, databaseStr, collectionStr); err != nil {
+		panic(err)
 	}
 }
 
 func main() {
-	server := newServer()
-	log.Fatal(http.ListenAndServe(":8080", server))
+	viper.AutomaticEnv()
+	connectMongoDB()
+	initServer()
 }
