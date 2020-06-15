@@ -31,12 +31,14 @@ type ResourceAttributes map[string]interface{}
 
 // Meta represents the metadata of a resource
 type Meta struct {
+	ResourceType string
 	// Created is the time that the resource was added to the service provider.
 	Created *time.Time
 	// LastModified is the most recent time that the details of this resource were updated at the service provider.
 	LastModified *time.Time
 	// Version is the version / entity-tag of the resource
 	Version string
+	Location string
 }
 
 // Resource represents an entity returned by a callback method.
@@ -86,6 +88,11 @@ func (r Resource) response(resourceType ResourceType) ResourceAttributes {
 	return response
 }
 
+// Map ...
+func (r Resource) Map(resourceType ResourceType) ResourceAttributes {
+	return r.response(resourceType)
+}
+
 // ResourceHandler represents a set of callback method that connect the SCIM server with a provider of a certain resource.
 type ResourceHandler interface {
 	// Create stores given attributes. Returns a resource with the attributes that are stored and a (new) unique identifier.
@@ -93,7 +100,7 @@ type ResourceHandler interface {
 	// Get returns the resource corresponding with the given identifier.
 	Get(r *http.Request, id string) (Resource, error)
 	// GetAll returns a paginated list of resources.
-	GetAll(r *http.Request, params ListRequestParams) (Page, error)
+	GetAll(r *http.Request, params *ListRequestParams) (Page, error)
 	// Replace replaces ALL existing attributes of the resource with given identifier. Given attributes that are empty
 	// are to be deleted. Returns a resource with the attributes that are stored.
 	Replace(r *http.Request, id string, attributes ResourceAttributes) (Resource, error)

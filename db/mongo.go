@@ -2,8 +2,8 @@ package db
 
 import (
 	"context"
-	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -13,7 +13,10 @@ import (
 type IMongoDB interface {
 	GetClient() *mongo.Client
 	ConnectDB(connectionString string, database string, collection string) error
-	Insert(document map[string]interface{}) error
+	Insert(document interface{}) error
+	Find(id string) (bson.M, error)
+	GetAll() ([]bson.M, error)
+	Delete(id string) error
 }
 
 type mongoDB struct {
@@ -26,12 +29,11 @@ func (db *mongoDB) GetClient() *mongo.Client {
 }
 
 func (db *mongoDB) ConnectDB(connectionStr string, databaseStr string, collectionStr string) error {
-	ctx := contextWithTimeout(10)
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(connectionStr))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(connectionStr))
 	if err != nil {
 		return err
 	}
-	if err = client.Ping(contextWithTimeout(2), readpref.Primary()); err != nil {
+	if err = client.Ping(context.TODO(), readpref.Primary()); err != nil {
 		return err
 	}
 	collection := client.Database(databaseStr).Collection(collectionStr)
@@ -40,15 +42,33 @@ func (db *mongoDB) ConnectDB(connectionStr string, databaseStr string, collectio
 	return nil
 }
 
-func (db *mongoDB) Insert(document map[string]interface{}) error {
-	_, err := db.collection.InsertOne(contextWithTimeout(5), document)
+func (db *mongoDB) Insert(document interface{}) error {
+	_, err := db.collection.InsertOne(context.TODO(), document)
 	return err
 }
 
-// MongoDB ...
-var MongoDB IMongoDB = &mongoDB{}
-
-func contextWithTimeout(sec time.Duration) context.Context {
-	ctx, _ := context.WithTimeout(context.Background(), sec*time.Second)
-	return ctx
+func (db *mongoDB) Find(id string) (result bson.M, erro error) {
+	erro = db.collection.FindOne(context.TODO(), bson.M{"id": id}).Decode(&result)
+	if erro == mongo.ErrNoDocuments {
+		erro = nil
+	}
+	return
 }
+
+func (db *mongoDB) GetAll() (results []bson.M, erro error) {
+	cursor, erro := db.collection.Find(context.TODO(), bson.D{}, options.Find())
+	if erro != nil {
+	}
+	erro = cursor.All(context.TODO(), &results)
+	return
+}
+
+func (db *mongoDB) Delete(id string) error {
+	_, err := db.collection.DeleteOne(context.TODO(), bson.M{"id": id})
+	return err
+}
+
+var (
+	// MongoDB ...
+	MongoDB IMongoDB = &mongoDB{}
+)

@@ -267,7 +267,7 @@ func (s Server) resourcesGetHandler(w http.ResponseWriter, r *http.Request, reso
 		return
 	}
 
-	page, getError := resourceType.Handler.GetAll(r, params)
+	page, getError := resourceType.Handler.GetAll(r, &params)
 	if getError != nil {
 		scimErr := errors.CheckScimError(getError, http.MethodGet)
 		errorHandler(w, r, &scimErr)
