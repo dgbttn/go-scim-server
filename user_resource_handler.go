@@ -65,7 +65,8 @@ func (h UserResourceHandler) Get(r *http.Request, id string) (scim.Resource, err
 	if len(user) == 0 {
 		return scim.Resource{}, errors.ScimErrorResourceNotFound(id)
 	}
-	return h.attributesToResource(user), nil
+	delete(user, "_id")
+	return h.userDataToResource(user), nil
 }
 
 // GetAll ...
@@ -93,7 +94,8 @@ func (h UserResourceHandler) GetAll(r *http.Request, params *scim.ListRequestPar
 	}
 	to = from + params.Count
 	for _, user := range data[from:to] {
-		resources = append(resources, h.attributesToResource(user))
+		delete(user, "_id")
+		resources = append(resources, h.userDataToResource(user))
 	}
 
 	return scim.Page{
@@ -201,19 +203,70 @@ func (h UserResourceHandler) externalID(attributes map[string]interface{}) optio
 	return optional.String{}
 }
 
-func (h UserResourceHandler) id(attributes map[string]interface{}) string {
-	if id, ok := attributes["id"]; ok {
-		idStr, ok := id.(string)
-		if !ok {
-			return ""
-		}
-		return idStr
+func (h UserResourceHandler) getSlice(v interface{}) (s []interface{}, ok bool) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return
 	}
-	return ""
+	err = json.Unmarshal(b, &s)
+	if err != nil {
+		return
+	}
+	return s, true
 }
 
-func (h UserResourceHandler) meta(attributes map[string]interface{}) (meta scim.Meta) {
-	if m, ok := attributes["meta"]; ok {
+func (h UserResourceHandler) getMap(v interface{}) (m map[string]interface{}, ok bool) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(b, &m)
+	if err != nil {
+		return
+	}
+	return m, true
+}
+
+func (h UserResourceHandler) cleanMap(userData map[string]interface{}) map[string]interface{} {
+	for k, v := range userData {
+		if v == nil {
+			delete(userData, k)
+			continue
+		}
+		if attr, ok := h.getMap(v); ok {
+			userData[k] = h.cleanMap(attr)
+			continue
+		}
+		if attr, ok := h.getSlice(v); ok {
+			for i := 0; i < len(attr); i++ {
+				if element, ok := h.getMap(attr[i]); ok {
+					attr[i] = h.cleanMap(element)
+				}
+			}
+			userData[k] = attr
+		}
+	}
+	return userData
+}
+
+func (h UserResourceHandler) extractUserData(userData map[string]interface{}) (id string, externalID optional.String, attributes map[string]interface{}, meta scim.Meta) {
+	// id
+	if idAttr, ok := userData["id"]; ok {
+		id, _ = idAttr.(string)
+	}
+
+	// externalID
+	if eIDAttr, ok := userData["externalId"]; ok {
+		if eIDStr, ok := eIDAttr.(string); ok {
+			externalID = optional.NewString(eIDStr)
+		}
+	}
+
+	// other attributes
+	attributes = h.cleanMap(userData)
+
+	// meta
+	if m, ok := userData["meta"]; ok {
 		b, err := bson.MarshalExtJSON(m, true, true)
 		if err != nil {
 			return
@@ -248,11 +301,12 @@ func (h UserResourceHandler) meta(attributes map[string]interface{}) (meta scim.
 	return
 }
 
-func (h UserResourceHandler) attributesToResource(attributes map[string]interface{}) scim.Resource {
+func (h UserResourceHandler) userDataToResource(userData map[string]interface{}) scim.Resource {
+	id, externalID, attributes, meta := h.extractUserData(userData)
 	return scim.Resource{
-		ID:         h.id(attributes),
-		ExternalID: h.externalID(attributes),
+		ID:         id,
+		ExternalID: externalID,
 		Attributes: attributes,
-		Meta:       h.meta(attributes),
+		Meta:       meta,
 	}
 }

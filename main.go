@@ -30,7 +30,7 @@ func initServer() {
 		},
 	}
 
-	log.Fatal(http.ListenAndServe(":8080", server))
+	log.Fatal(http.ListenAndServe(":8082", server))
 }
 
 func connectMongoDB() {
