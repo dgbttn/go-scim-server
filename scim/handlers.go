@@ -1,6 +1,7 @@
 package scim
 
 import (
+	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -223,6 +224,32 @@ func (s Server) resourcePostHandler(w http.ResponseWriter, r *http.Request, reso
 		w.Header().Set("Etag", resource.Meta.Version)
 	}
 
+	id, extraAttributes, err := resourceType.Provisioner.Post(bytes.NewReader(raw))
+	if err != nil {
+		errorHandler(w, r, &errors.ScimErrorInternal)
+		return
+	}
+	for k, v := range extraAttributes {
+		attributes[k] = v
+	}
+
+	resource, postErr = resourceType.Handler.Replace(r, id, attributes)
+	if postErr != nil {
+		scimErr := errors.CheckScimError(postErr, http.MethodPost)
+		errorHandler(w, r, &scimErr)
+		return
+	}
+
+	raw, err = json.Marshal(resource.response(resourceType))
+	if err != nil {
+		errorHandler(w, r, &errors.ScimErrorInternal)
+		log.Fatalf("failed marshaling resource: %v", err)
+		return
+	}
+	if resource.Meta.Version != "" {
+		w.Header().Set("Etag", resource.Meta.Version)
+	}
+
 	w.WriteHeader(http.StatusCreated)
 
 	_, err = w.Write(raw)
@@ -330,6 +357,8 @@ func (s Server) resourcePutHandler(w http.ResponseWriter, r *http.Request, id st
 	if err != nil {
 		log.Printf("failed writing response: %v", err)
 	}
+
+	resourceType.Provisioner.Patch(id, bytes.NewReader(raw))
 }
 
 // resourceDeleteHandler receives an HTTP DELETE request to the resource endpoint, e.g., "/Users/{id}" or "/Groups/{id}",
@@ -343,4 +372,6 @@ func (s Server) resourceDeleteHandler(w http.ResponseWriter, r *http.Request, id
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+
+	resourceType.Provisioner.Delete(id)
 }

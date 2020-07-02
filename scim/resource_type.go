@@ -31,6 +31,9 @@ type ResourceType struct {
 
 	// Handler is the set of callback method that connect the SCIM server with a provider of the resource type.
 	Handler ResourceHandler
+
+	// Provisioner
+	Provisioner *ProvisioningClient
 }
 
 // SchemaExtension is one of the resource type's schema extensions.

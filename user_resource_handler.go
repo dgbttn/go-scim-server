@@ -33,12 +33,13 @@ var (
 type UserResourceHandler struct{}
 
 // Create ...
-func (h UserResourceHandler) Create(r *http.Request, attributes scim.ResourceAttributes) (scim.Resource, error) {
+func (h UserResourceHandler) Create(r *http.Request, userInfo scim.ResourceAttributes) (scim.Resource, error) {
 	id := uuid.New().String()
 	now := time.Now()
+	_, externalID, attributes, _ := h.extractUserData(userInfo)
 	resource := scim.Resource{
 		ID:         id,
-		ExternalID: h.externalID(attributes),
+		ExternalID: externalID,
 		Attributes: attributes,
 		Meta: scim.Meta{
 			ResourceType: UserResourceType.Name,
@@ -106,24 +107,35 @@ func (h UserResourceHandler) GetAll(r *http.Request, params *scim.ListRequestPar
 
 // Replace ...
 func (h UserResourceHandler) Replace(r *http.Request, id string, attributes scim.ResourceAttributes) (scim.Resource, error) {
-	// // check if resource exists
-	// _, ok := h.data[id]
-	// if !ok {
-	// 	return scim.Resource{}, errors.ScimErrorResourceNotFound(id)
-	// }
+	user, err := db.MongoDB.Find(id)
+	if err != nil {
+		return scim.Resource{}, errors.ScimErrorInternal
+	}
+	if len(user) == 0 {
+		return scim.Resource{}, errors.ScimErrorResourceNotFound(id)
+	}
+	db.MongoDB.Delete(id)
 
-	// // replace (all) attributes
-	// h.data[id] = UserData{
-	// 	resourceAttributes: attributes,
-	// }
+	created := h.userDataToResource(user).Meta.Created
+	lastModified := time.Now()
 
-	// // return resource with replaced attributes
-	// return scim.Resource{
-	// 	ID:         id,
-	// 	ExternalID: h.externalID(attributes),
-	// 	Attributes: attributes,
-	// }, nil
-	return scim.Resource{}, nil
+	_, externalID, attrs, meta := h.extractUserData(attributes)
+	newUser := scim.Resource{
+		ID:         id,
+		ExternalID: externalID,
+		Attributes: attrs,
+		Meta: scim.Meta{
+			ResourceType: meta.ResourceType,
+			Created:      created,
+			LastModified: &lastModified,
+			Location:     meta.Location,
+		},
+	}
+	// store resource
+	if err := db.MongoDB.Insert(newUser.Map(UserResourceType)); err != nil {
+		return scim.Resource{}, errors.ScimErrorInternal
+	}
+	return newUser, nil
 }
 
 // Delete ...
