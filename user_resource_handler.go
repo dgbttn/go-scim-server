@@ -13,10 +13,17 @@ import (
 	"github.com/dgbttn/go-scim-server/schema"
 	"github.com/dgbttn/go-scim-server/scim"
 	"github.com/google/uuid"
+	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 var (
+	clientID        = viper.GetString("CLIENT_ID")
+	provisionerURL  = viper.GetString("PROVISIONING_CLIENT_URL")
+	userProvisioner = scim.ProvisioningClient{
+		BaseURI: provisionerURL,
+		Params:  map[string]string{"client_id": clientID},
+	}
 	userResourceHandler = UserResourceHandler{}
 	// UserResourceType ...
 	UserResourceType = scim.ResourceType{
@@ -26,6 +33,7 @@ var (
 		Description: optional.NewString("User Account"),
 		Schema:      schema.CoreUserSchema(),
 		Handler:     userResourceHandler,
+		Provisioner: &userProvisioner,
 	}
 )
 
@@ -156,51 +164,70 @@ func (h UserResourceHandler) Delete(r *http.Request, id string) error {
 
 // Patch ...
 func (h UserResourceHandler) Patch(r *http.Request, id string, req scim.PatchRequest) (scim.Resource, error) {
-	// for _, op := range req.Operations {
-	// 	switch op.Op {
-	// 	case scim.PatchOperationAdd:
-	// 		if op.Path != "" {
-	// 			h.data[id].resourceAttributes[op.Path] = op.Value
-	// 		} else {
-	// 			valueMap := op.Value.(map[string]interface{})
-	// 			for k, v := range valueMap {
-	// 				if arr, ok := h.data[id].resourceAttributes[k].([]interface{}); ok {
-	// 					arr = append(arr, v)
-	// 					h.data[id].resourceAttributes[k] = arr
-	// 				} else {
-	// 					h.data[id].resourceAttributes[k] = v
-	// 				}
-	// 			}
-	// 		}
-	// 	case scim.PatchOperationReplace:
-	// 		if op.Path != "" {
-	// 			h.data[id].resourceAttributes[op.Path] = op.Value
-	// 		} else {
-	// 			valueMap := op.Value.(map[string]interface{})
-	// 			for k, v := range valueMap {
-	// 				h.data[id].resourceAttributes[k] = v
-	// 			}
-	// 		}
-	// 	case scim.PatchOperationRemove:
-	// 		h.data[id].resourceAttributes[op.Path] = nil
-	// 	}
-	// }
+	user, err := db.MongoDB.Find(id)
+	if err != nil {
+		return scim.Resource{}, errors.ScimErrorInternal
+	}
+	if len(user) == 0 {
+		return scim.Resource{}, errors.ScimErrorResourceNotFound(id)
+	}
 
-	// created, _ := time.ParseInLocation(time.RFC3339, fmt.Sprintf("%v", h.data[id].meta["created"]), time.UTC)
-	// now := time.Now()
+	for _, op := range req.Operations {
+		switch op.Op {
+		case scim.PatchOperationAdd:
+			if op.Path != "" {
+				user[op.Path] = op.Value
+			} else {
+				valueMap := op.Value.(map[string]interface{})
+				for k, v := range valueMap {
+					if arr, ok := v.([]interface{}); ok {
+						list, _ := json.Marshal(user[k])
+						oldArr := []interface{}{}
+						json.Unmarshal(list, &oldArr)
+						user[k] = append(oldArr, arr...)
+					} else {
+						user[k] = v
+					}
+				}
+			}
+		case scim.PatchOperationReplace:
+			if op.Path != "" {
+				user[op.Path] = op.Value
+			} else {
+				valueMap := op.Value.(map[string]interface{})
+				for k, v := range valueMap {
+					user[k] = v
+				}
+			}
+		case scim.PatchOperationRemove:
+			user[op.Path] = nil
+		}
+	}
 
-	// // return resource with replaced attributes
-	// return scim.Resource{
-	// 	ID:         id,
-	// 	ExternalID: h.externalID(h.data[id].resourceAttributes),
-	// 	Attributes: h.data[id].resourceAttributes,
-	// 	Meta: scim.Meta{
-	// 		Created:      &created,
-	// 		LastModified: &now,
-	// 		Version:      fmt.Sprintf("%s.patch", h.data[id].meta["version"]),
-	// 	},
-	// }, nil
-	return scim.Resource{}, nil
+	db.MongoDB.Delete(id)
+
+	meta := h.userDataToResource(user).Meta
+	lastModified := time.Now()
+
+	_, externalID, attrs, _ := h.extractUserData(user)
+
+	// return resource with replaced attributes
+	newUser := scim.Resource{
+		ID:         id,
+		ExternalID: externalID,
+		Attributes: attrs,
+		Meta: scim.Meta{
+			ResourceType: meta.ResourceType,
+			Created:      meta.Created,
+			LastModified: &lastModified,
+			Location:     meta.Location,
+		},
+	}
+	// store resource
+	if err := db.MongoDB.Insert(newUser.Map(UserResourceType)); err != nil {
+		return scim.Resource{}, errors.ScimErrorInternal
+	}
+	return newUser, nil
 }
 
 func (h UserResourceHandler) externalID(attributes map[string]interface{}) optional.String {

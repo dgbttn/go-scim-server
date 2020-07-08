@@ -193,6 +193,10 @@ func (s Server) resourcePatchHandler(w http.ResponseWriter, r *http.Request, id 
 	if err != nil {
 		log.Printf("failed writing response: %v", err)
 	}
+
+	if err = resourceType.Provisioner.Patch(id, bytes.NewReader(raw)); err != nil {
+		log.Println("Patch provisioning client:", err)
+	}
 }
 
 // resourcePostHandler receives an HTTP POST request to the resource endpoint, such as "/Users" or "/Groups", as
@@ -225,29 +229,26 @@ func (s Server) resourcePostHandler(w http.ResponseWriter, r *http.Request, reso
 	}
 
 	id, extraAttributes, err := resourceType.Provisioner.Post(bytes.NewReader(raw))
-	if err != nil {
-		errorHandler(w, r, &errors.ScimErrorInternal)
-		return
-	}
-	for k, v := range extraAttributes {
-		attributes[k] = v
-	}
+	if err == nil {
+		for k, v := range extraAttributes {
+			attributes[k] = v
+		}
 
-	resource, postErr = resourceType.Handler.Replace(r, id, attributes)
-	if postErr != nil {
-		scimErr := errors.CheckScimError(postErr, http.MethodPost)
-		errorHandler(w, r, &scimErr)
-		return
-	}
+		resource, postErr = resourceType.Handler.Replace(r, id, attributes)
+		if postErr != nil {
+			scimErr := errors.CheckScimError(postErr, http.MethodPost)
+			errorHandler(w, r, &scimErr)
+			return
+		}
 
-	raw, err = json.Marshal(resource.response(resourceType))
-	if err != nil {
-		errorHandler(w, r, &errors.ScimErrorInternal)
-		log.Fatalf("failed marshaling resource: %v", err)
-		return
-	}
-	if resource.Meta.Version != "" {
-		w.Header().Set("Etag", resource.Meta.Version)
+		raw, err = json.Marshal(resource.response(resourceType))
+		if err != nil {
+			errorHandler(w, r, &errors.ScimErrorInternal)
+			log.Fatalf("failed marshaling resource: %v", err)
+			return
+		}
+	} else {
+		log.Println("Post provisioning client:", err)
 	}
 
 	w.WriteHeader(http.StatusCreated)
@@ -358,7 +359,9 @@ func (s Server) resourcePutHandler(w http.ResponseWriter, r *http.Request, id st
 		log.Printf("failed writing response: %v", err)
 	}
 
-	resourceType.Provisioner.Patch(id, bytes.NewReader(raw))
+	if err = resourceType.Provisioner.Patch(id, bytes.NewReader(raw)); err != nil {
+		log.Println("Patch provisioning client:", err)
+	}
 }
 
 // resourceDeleteHandler receives an HTTP DELETE request to the resource endpoint, e.g., "/Users/{id}" or "/Groups/{id}",
@@ -373,5 +376,7 @@ func (s Server) resourceDeleteHandler(w http.ResponseWriter, r *http.Request, id
 
 	w.WriteHeader(http.StatusNoContent)
 
-	resourceType.Provisioner.Delete(id)
+	if err := resourceType.Provisioner.Delete(id); err != nil {
+		log.Println("Delete provisioning client:", err)
+	}
 }

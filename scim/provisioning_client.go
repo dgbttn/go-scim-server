@@ -42,15 +42,18 @@ func (p *ProvisioningClient) Post(body io.Reader) (id string, extraAttributes ma
 	if erro != nil {
 		return
 	}
-	if resp.StatusCode != 201 {
-		erro = fmt.Errorf("")
-		return
-	}
+	defer resp.Body.Close()
 
 	returnedData, erro := ioutil.ReadAll(resp.Body)
 	if erro != nil {
 		return
 	}
+	if resp.StatusCode != 201 {
+		erro = fmt.Errorf(string(returnedData))
+		return
+	}
+
+	fmt.Println("Response from POST provisioning: ", string(returnedData))
 
 	returnedAttrs := make(map[string]interface{})
 	if erro = json.Unmarshal(returnedData, &returnedAttrs); erro != nil {
@@ -59,12 +62,12 @@ func (p *ProvisioningClient) Post(body io.Reader) (id string, extraAttributes ma
 
 	externalID, ok := returnedAttrs["externalId"].(string)
 	if !ok {
-		erro = fmt.Errorf("")
+		erro = fmt.Errorf("Not found externalId as string")
 		return
 	}
 	id, ok = returnedAttrs["id"].(string)
 	if !ok {
-		erro = fmt.Errorf("")
+		erro = fmt.Errorf("Not found id as string")
 		return
 	}
 	extraAttributes = make(map[string]string)
@@ -79,7 +82,13 @@ func (p *ProvisioningClient) Patch(id string, body io.Reader) (erro error) {
 		return
 	}
 	req.Header.Add("Content-Type", "application/json")
-	_, erro = http.DefaultClient.Do(req)
+	resp, erro := http.DefaultClient.Do(req)
+	if erro != nil {
+		return
+	}
+	defer resp.Body.Close()
+	returnedData, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println("Response from PATCH provisioning: ", string(returnedData))
 	return
 }
 
@@ -89,6 +98,12 @@ func (p *ProvisioningClient) Delete(id string) (erro error) {
 	if erro != nil {
 		return
 	}
-	_, erro = http.DefaultClient.Do(req)
+	resp, erro := http.DefaultClient.Do(req)
+	if erro != nil {
+		return
+	}
+	defer resp.Body.Close()
+	returnedData, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println("Response from DELETE provisioning: ", string(returnedData))
 	return
 }
